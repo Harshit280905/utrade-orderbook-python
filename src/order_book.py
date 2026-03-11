@@ -13,19 +13,70 @@ class Order:
 class OrderBook:
 
     def __init__(self):
-        # price -> queue of orders
         self.bids = {}
         self.asks = {}
 
     def add_order(self, order):
         if order.side == "BUY":
-            if order.price not in self.bids:
-                self.bids[order.price] = deque()
-            self.bids[order.price].append(order)
+            self.match_buy(order)
+            if order.quantity > 0:
+                if order.price not in self.bids:
+                    self.bids[order.price] = deque()
+                self.bids[order.price].append(order)
         else:
-            if order.price not in self.asks:
-                self.asks[order.price] = deque()
-            self.asks[order.price].append(order)
+            self.match_sell(order)
+            if order.quantity > 0:
+                if order.price not in self.asks:
+                    self.asks[order.price] = deque()
+                self.asks[order.price].append(order)
+
+    def match_buy(self, buy):
+        while buy.quantity > 0 and self.asks:
+            best_price = min(self.asks.keys())
+
+            if buy.price != 0 and buy.price < best_price:
+                break
+
+            queue = self.asks[best_price]
+            sell = queue[0]
+
+            trade_qty = min(buy.quantity, sell.quantity)
+
+            print(f"TRADE {buy.id} {sell.id} {best_price} {trade_qty}")
+
+            buy.quantity -= trade_qty
+            sell.quantity -= trade_qty
+
+            if sell.quantity == 0:
+                queue.popleft()
+
+            if not queue:
+                del self.asks[best_price]
+
+
+    def match_sell(self, sell):
+        while sell.quantity > 0 and self.bids:
+            best_price = max(self.bids.keys())
+
+            if sell.price != 0 and sell.price > best_price:
+                break
+
+            queue = self.bids[best_price]
+            buy = queue[0]
+
+            trade_qty = min(sell.quantity, buy.quantity)
+
+            trade_price = sell.price if sell.price != 0 else best_price
+            print(f"TRADE {buy.id} {sell.id} {trade_price} {trade_qty}")
+
+            sell.quantity -= trade_qty
+            buy.quantity -= trade_qty
+
+            if buy.quantity == 0:
+                queue.popleft()
+
+            if not queue:
+                del self.bids[best_price]
 
     def cancel_order(self, order_id):
         print(f"CANCEL request for {order_id}")
@@ -47,9 +98,7 @@ def main():
                 book.cancel_order(parts[1])
             continue
 
-        # ensure a valid order format: ORDER_ID SIDE PRICE QUANTITY
         if len(parts) != 4:
-            # ignore malformed input lines
             continue
 
         order_id, side, price, qty = parts
