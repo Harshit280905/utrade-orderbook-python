@@ -102,6 +102,27 @@ class OrderBook:
 
         del self.order_lookup[order_id]
 
+    def print_book(self):
+        print("--- Book ---")
+
+        ask_prices = sorted(self.asks.keys())[:5]
+        if not ask_prices:
+            print("ASK: (empty)")
+        else:
+            for price in ask_prices:
+                total_qty = sum(order.quantity for order in self.asks[price])
+                if total_qty > 0:
+                    print(f"ASK: {price:.2f} x {total_qty}")
+
+        bid_prices = sorted(self.bids.keys(), reverse=True)[:5]
+        if not bid_prices:
+            print("BID: (empty)")
+        else:
+            for price in bid_prices:
+                total_qty = sum(order.quantity for order in self.bids[price])
+                if total_qty > 0:
+                    print(f"BID: {price:.2f} x {total_qty}")
+
 
 def main():
 
@@ -130,6 +151,8 @@ def main():
         order = Order(order_id, side, price, qty)
 
         book.add_order(order)
+
+    book.print_book()
 
 
 if __name__ == "__main__":
