@@ -1,6 +1,9 @@
 from collections import deque
 import sys
 
+# ========================
+# Order Data Structure
+# ========================
 
 class Order:
     def __init__(self, order_id, side, price, quantity):
@@ -9,6 +12,10 @@ class Order:
         self.price = price
         self.quantity = quantity
 
+
+# ========================
+# Order Book Engine
+# ========================
 
 class OrderBook:
 
@@ -43,6 +50,10 @@ class OrderBook:
             queue = self.asks[best_price]
             sell = queue[0]
 
+            # Self-trade prevention
+            if buy.id == sell.id:
+                break
+
             trade_qty = min(buy.quantity, sell.quantity)
 
             print(f"TRADE {buy.id} {sell.id} {best_price} {trade_qty}")
@@ -52,6 +63,8 @@ class OrderBook:
 
             if sell.quantity == 0:
                 queue.popleft()
+                if sell.id in self.order_lookup:
+                    del self.order_lookup[sell.id]
 
             if not queue:
                 del self.asks[best_price]
@@ -67,6 +80,10 @@ class OrderBook:
             queue = self.bids[best_price]
             buy = queue[0]
 
+            # Self-trade prevention
+            if sell.id == buy.id:
+                break
+
             trade_qty = min(sell.quantity, buy.quantity)
 
             trade_price = sell.price if sell.price != 0 else best_price
@@ -77,6 +94,8 @@ class OrderBook:
 
             if buy.quantity == 0:
                 queue.popleft()
+                if buy.id in self.order_lookup:
+                    del self.order_lookup[buy.id]
 
             if not queue:
                 del self.bids[best_price]
@@ -105,6 +124,7 @@ class OrderBook:
     def print_book(self):
         print("--- Book ---")
 
+
         ask_prices = sorted(self.asks.keys())[:5]
         if not ask_prices:
             print("ASK: (empty)")
@@ -123,6 +143,10 @@ class OrderBook:
                 if total_qty > 0:
                     print(f"BID: {price:.2f} x {total_qty}")
 
+
+# ========================
+# Program Entry Point
+# ========================
 
 def main():
 
