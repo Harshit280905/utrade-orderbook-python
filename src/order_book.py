@@ -15,6 +15,7 @@ class OrderBook:
     def __init__(self):
         self.bids = {}
         self.asks = {}
+        self.order_lookup = {}
 
     def add_order(self, order):
         if order.side == "BUY":
@@ -23,12 +24,14 @@ class OrderBook:
                 if order.price not in self.bids:
                     self.bids[order.price] = deque()
                 self.bids[order.price].append(order)
+                self.order_lookup[order.id] = ("BUY", order.price, order)
         else:
             self.match_sell(order)
             if order.quantity > 0:
                 if order.price not in self.asks:
                     self.asks[order.price] = deque()
                 self.asks[order.price].append(order)
+                self.order_lookup[order.id] = ("SELL", order.price, order)
 
     def match_buy(self, buy):
         while buy.quantity > 0 and self.asks:
@@ -79,7 +82,25 @@ class OrderBook:
                 del self.bids[best_price]
 
     def cancel_order(self, order_id):
-        print(f"CANCEL request for {order_id}")
+        if order_id not in self.order_lookup:
+            return
+
+        side, price, order = self.order_lookup[order_id]
+
+        book = self.bids if side == "BUY" else self.asks
+
+        if price in book:
+            queue = book[price]
+
+            for i, o in enumerate(queue):
+                if o.id == order_id:
+                    del queue[i]
+                    break
+
+            if not queue:
+                del book[price]
+
+        del self.order_lookup[order_id]
 
 
 def main():
